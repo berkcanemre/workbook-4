@@ -1,60 +1,85 @@
 package com.pluralsight; // Declare the package name
 
-public class Employee { // Define the Employee class
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-    // Backing variables
-    private int employeeId; // Unique employee ID
-    private String name; // Name of the employee
-    private String department; // Department the employee works in
-    private double payRate; // Hourly pay rate
-    private double hoursWorked; // Total hours worked by employee
-    private Double startTime = null; // Start time when punched in (null if not punched in)
+public class Employee {
+    private int employeeId;                  // Unique ID for the employee
+    private String name;                     // Employee's name
+    private String department;               // Department the employee works in
+    private double payRate;                  // Pay rate per hour
+    private double hoursWorked;              // Total hours worked
+    private Double startTime = null;         // Start time of current shift (null if not clocked in)
 
-    // Constructor to initialize all variables
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // Formatter for output
+
+    // Constructor to initialize employee object
     public Employee(int employeeId, String name, String department, double payRate, double hoursWorked) {
-        this.employeeId = employeeId; // Assign employee ID
-        this.name = name; // Assign name
-        this.department = department; // Assign department
-        this.payRate = payRate; // Assign hourly rate
-        this.hoursWorked = hoursWorked; // Initialize total hours worked
+        this.employeeId = employeeId;
+        this.name = name;
+        this.department = department;
+        this.payRate = payRate;
+        this.hoursWorked = hoursWorked;
     }
 
-    // Derived getter to return regular hours (up to 40)
-    public double getRegularHours() {
-        return Math.min(40, hoursWorked); // Return min of 40 or actual hours
-    }
-
-    // Derived getter to return overtime hours (over 40)
-    public double getOvertimeHours() {
-        return Math.max(0, hoursWorked - 40); // Return any hours beyond 40
-    }
-
-    // Derived getter to calculate total pay (regular + 1.5x overtime)
-    public double getTotalPay() {
-        return getRegularHours() * payRate + getOvertimeHours() * payRate * 1.5; // Calculate total pay
-    }
-
-    // Bonus: Unified method for both punch in and punch out
+    // Punch time using manual input (in decimal hours, e.g. 10.5)
     public void punchTimeCard(double time) {
-        if (startTime == null) { // If not punched in yet
-            startTime = time; // Set start time
-            System.out.println(name + " punched in at " + time); // Confirm punch in
-        } else { // Already punched in; this is a punch out
-            double hours = time - startTime; // Calculate hours worked in this session
-            if (hours < 0) { // Invalid input check
-                System.out.println("Error: punch-out time is earlier than punch-in time."); // Print error
+        if (startTime == null) {
+            startTime = time;
+            System.out.println(name + " punched in at " + time);
+        } else {
+            double workedHours = time - startTime;
+            if (workedHours < 0) {
+                System.out.println("Invalid punch-out time.");
             } else {
-                hoursWorked += hours; // Add session hours to total worked hours
-                System.out.println(name + " punched out at " + time + " and worked " + hours + " hour(s)."); // Confirm punch out
+                hoursWorked += workedHours;
+                System.out.println(name + " punched out at " + time + ", worked " + String.format("%.2f", workedHours) + " hours.");
             }
-            startTime = null; // Reset for next punch cycle
+            startTime = null;
         }
     }
 
-    // toString method for displaying employee summary
+    // Punch time using current system time (with hour, minute, and second precision)
+    public void punchTimeCard() {
+        LocalDateTime now = LocalDateTime.now(); // Get current system time
+        double time = now.getHour() + now.getMinute() / 60.0 + now.getSecond() / 3600.0; // Convert to decimal hour
+
+        if (startTime == null) {
+            startTime = time;
+            System.out.println(name + " punched in at " + now.format(formatter)); // Print formatted timestamp
+        } else {
+            double workedHours = time - startTime;
+            if (workedHours < 0) {
+                System.out.println("Invalid punch-out time.");
+            } else {
+                hoursWorked += workedHours;
+                System.out.println(name + " punched out at " + now.format(formatter)
+                        + ", worked " + String.format("%.2f", workedHours) + " hours.");
+            }
+            startTime = null;
+        }
+    }
+
+    // Get regular hours (up to 40)
+    public double getRegularHours() {
+        return Math.min(40, hoursWorked);
+    }
+
+    // Get overtime hours (above 40)
+    public double getOvertimeHours() {
+        return Math.max(0, hoursWorked - 40);
+    }
+
+    // Calculate total pay
+    public double getTotalPay() {
+        return getRegularHours() * payRate + getOvertimeHours() * payRate * 1.5;
+    }
+
+    // Override toString to display employee summary
     @Override
     public String toString() {
-        return "Employee " + name + " (ID: " + employeeId + ") in " + department + // Print name, ID, department
-                " worked " + hoursWorked + " hrs, Pay: $" + getTotalPay(); // Print total hours and total pay
+        return "Employee " + name + " (ID: " + employeeId + ") in " + department +
+                " worked " + String.format("%.2f", hoursWorked) + " hrs, Pay: $" +
+                String.format("%.2f", getTotalPay());
     }
 }
